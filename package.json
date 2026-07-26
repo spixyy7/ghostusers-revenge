@@ -1,0 +1,19 @@
+{
+  "name": "ghostusers-revenge",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@swc/helpers": "^0.5.13"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@swc/core": "^1.9.3",
+    "esbuild": "^0.24.0",
+    "rollup": "^4.27.4",
+    "rollup-plugin-esbuild": "^6.1.1",
+    "vendetta-types": "latest"
+  }
+}

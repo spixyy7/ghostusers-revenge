@@ -1,0 +1,14 @@
+{
+  "name": "GhostUsers",
+  "description": "Hide people locally: their messages, reactions, typing, calls and member-list entries never reach your client. Per-user options. Open a profile and tap \"Hide user (Ghost)\".",
+  "authors": [
+    {
+      "name": "spale",
+      "id": "938917185286447145"
+    }
+  ],
+  "main": "src/index.ts",
+  "vendetta": {
+    "icon": "ic_eye_hide"
+  }
+}
