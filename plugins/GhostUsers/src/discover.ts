@@ -6,7 +6,7 @@
 //
 // Everything here only reads and prints — it changes nothing and sends nothing.
 
-import { findAll } from "@vendetta/metro";
+import { findAll, findByStoreName } from "@vendetta/metro";
 import { FluxDispatcher } from "@vendetta/metro/common";
 
 const log = (line: string) => console.log(`[GhostUsers][find] ${line}`);
@@ -39,16 +39,45 @@ export function reconnoitre() {
             m && typeof m === "object" && Object.keys(m).some(k => /fetchReaction|getReactions|addReaction/i.test(k)));
         log(`reaction modules: ${reactionMods.slice(0, 4).map((m: any) => Object.keys(m).filter(k => /reaction/i.test(k)).slice(0, 5).join("/")).join(" | ") || "none"}`);
 
-        // 5. row components for lists of people
-        const rows = findAll((m: any) => {
-            const c = m?.default ?? m;
+        // 5. what the stores that matter can actually do
+        for (const name of [
+            "ChannelMemberStore",
+            "GuildMemberCountStore",
+            "ChannelMemberCountStore",
+            "MessageReactionsStore",
+            "CallStore",
+            "TypingStore",
+            "SortedVoiceStateStore",
+            "VoiceStateStore",
+        ]) {
+            const s = findByStoreName(name);
+            if (!s) {
+                log(`${name}: not found`);
+                continue;
+            }
+            const proto = Object.getPrototypeOf(s) ?? {};
+            const methods = [
+                ...Object.keys(s).filter(k => typeof s[k] === "function"),
+                ...Object.getOwnPropertyNames(proto).filter(k => k !== "constructor" && typeof proto[k] === "function"),
+            ];
+            log(`${name}: ${[...new Set(methods)].slice(0, 14).join(", ")}`);
+        }
+
+        // 6. rows usable inside an action sheet (ButtonRow is gone on this build)
+        const rowNames = new Set<string>();
+        for (const m of findAll((mod: any) => {
+            const c = mod?.default ?? mod;
             const n = c?.displayName ?? c?.name;
-            return typeof n === "string" && /member|participant|voiceuser/i.test(n);
-        });
-        const rowNames = rows
-            .map((m: any) => (m?.default ?? m)?.displayName ?? (m?.default ?? m)?.name)
-            .filter((n: any) => typeof n === "string");
-        log(`people-row components: ${[...new Set(rowNames)].slice(0, 12).join(", ") || "none"}`);
+            return typeof n === "string" && /^(TableRow|ActionSheetRow|ButtonRow|TableRowGroup|FormRow)/.test(n);
+        })) {
+            const c = (m as any)?.default ?? m;
+            rowNames.add(c.displayName ?? c.name);
+        }
+        log(`sheet row components: ${[...rowNames].slice(0, 10).join(", ") || "none"}`);
+
+        // 7. the dispatcher keeps its methods on the prototype
+        const dproto = Object.getPrototypeOf(FluxDispatcher ?? {}) ?? {};
+        log(`dispatcher proto: ${Object.getOwnPropertyNames(dproto).filter(k => k !== "constructor").slice(0, 14).join(", ")}`);
     } catch (e) {
         log(`failed: ${e}`);
     }
