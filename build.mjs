@@ -43,7 +43,12 @@ const plugins = [
             return result.code;
         },
     },
-    esbuild({ minify: true }),
+    // Whitespace and syntax only. Renaming identifiers gave a closure's cache the
+    // same name as a loop variable in the same function, so at runtime the cache
+    // WAS that loop's last string — and every channel the plugin tried to filter
+    // threw. The bundle is a few tens of kilobytes; the risk is not worth it, and
+    // real names make a stack trace from a phone worth reading.
+    esbuild({ minifyWhitespace: true, minifySyntax: true, minifyIdentifiers: false }),
 ];
 
 for (const plug of await readdir("./plugins")) {
