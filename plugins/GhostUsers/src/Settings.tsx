@@ -2,7 +2,7 @@
 // with each person's own switches folded away until you ask for them. Everything
 // else (defaults, status, what changed) sits below, closed.
 
-import { React } from "@vendetta/metro/common";
+import { React, ReactNative as RN } from "@vendetta/metro/common";
 import { useProxy } from "@vendetta/storage";
 import { Forms, General } from "@vendetta/ui/components";
 import { getAssetIDByName } from "@vendetta/ui/assets";
@@ -25,9 +25,37 @@ const LABELS: Record<string, [string, string]> = {
 
 const el = React.createElement;
 
+/** Their picture, however this build hands it over — and if the app has never
+    heard of them, the address is built the same way Discord builds it. */
+function avatarUrl(id: string): string | null {
+    const user: any = UserStore?.getUser?.(id);
+    for (const attempt of [
+        () => user?.getAvatarURL?.(false, 128),
+        () => user?.getAvatarURL?.(null, 128, true),
+        () => user?.getAvatarURL?.(),
+        () => (user?.avatar ? `https://cdn.discordapp.com/avatars/${id}/${user.avatar}.png?size=128` : null),
+    ]) {
+        try {
+            const url = attempt();
+            if (typeof url === "string" && url.startsWith("http")) return url;
+        } catch { /* try the next shape */ }
+    }
+    // the picture Discord gives someone with no avatar of their own
+    try {
+        const index = Number((BigInt(id) >> 22n) % 6n);
+        return `https://cdn.discordapp.com/embed/avatars/${index}.png`;
+    } catch {
+        return null;
+    }
+}
+
 function Avatar({ id }: { id: string }) {
-    const url = UserStore?.getUser?.(id)?.getAvatarURL?.(false, 64);
-    return el(FormRow.Icon, url ? { source: { uri: url } } : { source: getAssetIDByName("ic_person") });
+    const url = avatarUrl(id);
+    if (!url) return el(FormRow.Icon, { source: getAssetIDByName("ic_person") });
+    return el(RN.Image, {
+        source: { uri: url },
+        style: { width: 32, height: 32, borderRadius: 16, marginRight: 4 },
+    });
 }
 
 export default function Settings() {
