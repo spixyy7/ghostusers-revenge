@@ -36,6 +36,9 @@ export default function Settings() {
         `events seen: ${diag.events} · messages hidden: ${diag.hiddenMsgs} · rows touched: ${diag.rows}`,
         `reactor lookups: ${diag.lookupsSent} sent, ${diag.lookupsAnswered} answered`,
         diag.sheets.length ? `sheets seen: ${diag.sheets.join(", ")}` : "sheets seen: none yet",
+        diag.eventTypes.length ? `event types: ${diag.eventTypes.join(", ")}` : "event types: none yet",
+        diag.collection ? `collection: ${diag.collection}` : "collection: not read yet",
+        diag.lastRow ? `last row: ${diag.lastRow}` : "last row: none drawn yet",
     ].join("\n");
 
     return React.createElement(

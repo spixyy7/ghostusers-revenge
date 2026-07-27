@@ -5,7 +5,7 @@
 
 import { instead } from "@vendetta/patcher";
 import { FluxDispatcher } from "@vendetta/metro/common";
-import { anyHidden, diag, isHiddenIn, mark, shouldHideMessage, store } from "./core";
+import { anyHidden, diag, isHiddenIn, mark, sawEvent, shouldHideMessage, store } from "./core";
 import { filterCallEvent, isHiddenStream, maskVoiceStates } from "./calls";
 import { forgetReactions, learnFromEvent, learnFromReactorList } from "./reactions";
 
@@ -92,6 +92,7 @@ export function patchDispatcher(patches: (() => void)[]) {
             if (!e?.type || !anyHidden()) return orig.apply(FluxDispatcher, args);
             try {
                 diag.events++;
+                sawEvent(e.type);
                 if (handle(e)) return;
             } catch (err) {
                 console.log("[GhostUsers] dispatch", e?.type, err);

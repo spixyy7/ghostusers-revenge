@@ -168,10 +168,36 @@ export const diag = {
     rows: 0,
     /** keys of the action sheets opened so far — this is how the right one gets found */
     sheets: [] as string[],
+    /** what the row builder actually handed over, and what was made of it */
+    lastRow: "",
+    /** what a message collection looks like on this build */
+    collection: "",
+    /** which event types reach the patched dispatcher at all */
+    eventTypes: [] as string[],
     lookupsSent: 0,
     lookupsAnswered: 0,
     notes: [] as string[],
 };
+
+/** The author id, wherever this build of the app keeps it. */
+export function authorIdOf(msg: any): string | undefined {
+    return msg?.author?.id ?? msg?.author?.userId ?? msg?.authorId ?? msg?.userId ?? msg?.user?.id;
+}
+
+/** Channel type as the app reports it, for the probe line. */
+export function channelTypeOf(channelId?: string | null): number | null {
+    try {
+        return (channelId && ChannelStore?.getChannel?.(channelId)?.type) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+export function sawEvent(type: string) {
+    if (!type || diag.eventTypes.includes(type)) return;
+    diag.eventTypes.push(type);
+    while (diag.eventTypes.length > 10) diag.eventTypes.shift();
+}
 
 export function sawSheet(key: string) {
     if (!key || diag.sheets.includes(key)) return;

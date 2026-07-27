@@ -1,8 +1,15 @@
 // What changed, shown in the plugin's own settings. Written for whoever uses it.
 
-export const VERSION = "1.1.0";
+export const VERSION = "1.2.0";
 
 export const CHANGELOG: { version: string; lines: string[] }[] = [
+    {
+        version: "1.2.0",
+        lines: [
+            "The status block now also reports what the row builder was actually handed — which author id it found on a message, what kind of channel it decided the message was in, and whether that came out hidden. A hook that attaches but recognises nobody looks exactly like one that never ran, unless it says so.",
+            "The author of a message is looked for in every place different builds of the app keep it, and a hidden row is emptied out more thoroughly.",
+        ],
+    },
     {
         version: "1.1.0",
         lines: [
