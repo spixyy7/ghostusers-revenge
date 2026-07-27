@@ -62,6 +62,7 @@ export default function Settings() {
     useProxy(store);
     const [open, setOpen] = React.useState<string | null>(null);
     const [showMore, setShowMore] = React.useState(false);
+    const [openNote, setOpenNote] = React.useState<string | null>(CHANGELOG[0]?.version ?? null);
     const [newId, setNewId] = React.useState("");
 
     const ids = Object.keys(store.users ?? {});

@@ -1,35 +1,48 @@
-// What changed, shown in the plugin's own settings. Written for whoever uses it.
+// What changed, in the plugin's own settings. Written for whoever uses it — what is
+// different for them, not what moved in the code.
 
-export const VERSION = "1.7.0";
+export const VERSION = "1.11.0";
 
-export const CHANGELOG: { version: string; lines: string[] }[] = [
+export type Entry = { version: string; summary: string; lines: string[] };
+
+export const CHANGELOG: Entry[] = [
+    {
+        version: "1.11.0",
+        summary: "Pictures, and a tidier settings screen",
+        lines: [
+            "Hidden people show their picture next to their name, and each name folds open to their own switches, with a line explaining what each one does.",
+            "The status block is out of the way: one line at the bottom says whether everything is working, and opens if you want the detail.",
+            "Two voice readers were reported as unavailable although nothing was missing — each exists on one of Discord's two voice stores, so the absent pairing means nothing.",
+        ],
+    },
+    {
+        version: "1.9.0",
+        summary: "Servers, properly",
+        lines: [
+            "A hidden person is gone from a server's member list, from the count above it and from the server's member total — but only in servers they are actually in.",
+            "Their place no longer keeps a grey slot loading forever. That came from removing them on the way in, which left a hole in the numbered range the list keeps; they are taken out where the screen reads its rows instead.",
+        ],
+    },
+    {
+        version: "1.8.0",
+        summary: "Hidden means hidden",
+        lines: [
+            "Hiding someone now applies everywhere — servers and direct messages included — instead of group conversations only. Anyone hidden under the old meaning came along, unless their switches had been changed by hand.",
+        ],
+    },
     {
         version: "1.7.0",
+        summary: "The one where it started working",
         lines: [
-            "Hiding works. What kept it from working was not Discord but the way this plugin was packaged: the bundler gave two unrelated variables the same short name, so a cache became a piece of text at runtime and every channel it tried to filter threw. Names are left alone now.",
-            "Everything is filtered where the app reads it rather than after it is drawn, so nobody flashes on screen first: the member list and its counters, typing, reactions and who reacted, calls and who is in them.",
-            "A hidden person is dropped from a group's member list, its count, and the line of names under the group's title.",
-        ],
-    },
-    {
-        version: "1.2.0",
-        lines: [
-            "The status block now also reports what the row builder was actually handed — which author id it found on a message, what kind of channel it decided the message was in, and whether that came out hidden. A hook that attaches but recognises nobody looks exactly like one that never ran, unless it says so.",
-            "The author of a message is looked for in every place different builds of the app keep it, and a hidden row is emptied out more thoroughly.",
-        ],
-    },
-    {
-        version: "1.1.0",
-        lines: [
-            "Fixed hiding doing nothing at all: a channel the app could not identify was treated as \"leave it alone\", which silently switched the whole plugin off. Anything with a server behind it now counts as a server, and an unknown channel falls back to the group setting.",
-            "The \"Hide user (Ghost)\" button now looks for a profile by what the sheet carries rather than by its name, since that name has changed more than once.",
-            "Settings now open with a status block: which parts attached to this build of Discord, and counters showing whether the interception is actually running. It never leaves your phone.",
+            "What kept everything from working was not Discord but the way this plugin was packaged: two unrelated variables were given the same short name, so a cache turned into a piece of text and every channel it touched failed quietly.",
+            "Everything is filtered where the app reads it rather than after it is drawn, so nobody appears for a moment first: messages, member lists and counters, typing, reactions, calls and who is in them.",
         ],
     },
     {
         version: "1.0.0",
+        summary: "First release for Revenge",
         lines: [
-            "First release for Revenge — the port of the desktop plugin. Runs on the official Discord app, so calls still work, unlike the Aliucord build.",
+            "The desktop plugin, ported to the official Discord app — so calls still work, unlike the Aliucord build, which Discord no longer lets into a call at all.",
         ],
     },
 ];
