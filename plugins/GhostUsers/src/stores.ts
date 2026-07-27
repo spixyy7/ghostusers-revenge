@@ -129,6 +129,20 @@ export function patchStores(patches: (() => void)[]) {
     }, "typing");
 
     /* ---- member list: the rows the panel draws ---- */
+    let propsLogged = 0;
+    on("ChannelMemberStore", "getProps", (args, ret) => {
+        if (propsLogged < 2) {
+            propsLogged++;
+            const shape = ret && typeof ret === "object"
+                ? Object.entries(ret).map(([k, v]) => `${k}:${Array.isArray(v) ? `array(${v.length})` : typeof v}`).join(" ")
+                : typeof ret;
+            console.log(`[GhostUsers] getProps args=${args.map((a: any) => typeof a === "object" ? "obj" : a).join(",")} -> ${shape}`);
+            const rows = (ret as any)?.rows ?? (ret as any)?.sections;
+            if (Array.isArray(rows)) console.log(`[GhostUsers] getProps rows sample=${JSON.stringify(rows.slice(0, 2))?.slice(0, 260)}`);
+        }
+        return ret;
+    }, "memberProps");
+
     let rowsLogged = 0;
     on("ChannelMemberStore", "getRows", (args, ret) => {
         if (!Array.isArray(ret)) return ret;
