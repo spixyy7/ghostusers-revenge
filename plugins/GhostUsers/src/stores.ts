@@ -129,18 +129,31 @@ export function patchStores(patches: (() => void)[]) {
     }, "typing");
 
     /* ---- member list: the rows the panel draws ---- */
-    let propsLogged = 0;
+    /** A member row, whichever way this build shapes one. */
+    const rowUserId = (row: any) =>
+        row?.user?.id ?? row?.member?.user?.id ?? row?.userId ?? row?.member?.userId ?? row?.id;
+
+    let sampled = false;
     on("ChannelMemberStore", "getProps", (args, ret) => {
-        if (propsLogged < 2) {
-            propsLogged++;
-            const shape = ret && typeof ret === "object"
-                ? Object.entries(ret).map(([k, v]) => `${k}:${Array.isArray(v) ? `array(${v.length})` : typeof v}`).join(" ")
-                : typeof ret;
-            console.log(`[GhostUsers] getProps args=${args.map((a: any) => typeof a === "object" ? "obj" : a).join(",")} -> ${shape}`);
-            const rows = (ret as any)?.rows ?? (ret as any)?.sections;
-            if (Array.isArray(rows)) console.log(`[GhostUsers] getProps rows sample=${JSON.stringify(rows.slice(0, 2))?.slice(0, 260)}`);
+        if (!ret || !Array.isArray(ret.rows)) return ret;
+        if (!sampled) {
+            sampled = true;
+            const sample = ret.rows.find((r: any) => r);
+            console.log(`[GhostUsers] member row shape: ${JSON.stringify(sample)?.slice(0, 200)}`);
         }
-        return ret;
+        const guildId = args[0];
+        const rows = ret.rows.filter((row: any) => {
+            const uid = rowUserId(row);
+            return !(uid && isHiddenIn(uid, undefined, guildId) && opt(uid, "hideMemberList"));
+        });
+        if (rows.length === ret.rows.length) return ret;
+        const removed = ret.rows.length - rows.length;
+        diag.rows += removed;
+        const groups = Array.isArray(ret.groups)
+            ? ret.groups.map((g: any) =>
+                typeof g?.count === "number" ? { ...g, count: Math.max(0, g.count - removed) } : g)
+            : ret.groups;
+        return { ...ret, rows, groups };
     }, "memberProps");
 
     let rowsLogged = 0;
