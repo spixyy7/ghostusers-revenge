@@ -56,23 +56,45 @@ function handle(e: any): boolean {
         }
 
         case "GUILD_MEMBER_LIST_UPDATE": {
-            // A server's member list arrives as operations on a list, with the
-            // counts alongside. Hidden people are taken out of both, so the list is
-            // right from the first frame instead of being corrected afterwards.
+            // A server's member list arrives as operations on a numbered range, with
+            // group headers inline and the counts alongside. Dropping someone means
+            // shrinking the range they occupied as well, otherwise the list keeps an
+            // empty grey slot where they were, and taking one off the count of THEIR
+            // group only — not of every group.
             const guildId = e.guildId ?? e.guild_id;
             const gone = (uid?: string) =>
                 !!uid && isHiddenIn(uid, undefined, guildId) && opt(uid, "hideMemberList");
             const itemUser = (it: any) => it?.member?.user?.id ?? it?.member?.userId ?? it?.user?.id;
+            const groupOf = (id?: string) => (e.groups ?? []).find((g: any) => g?.id === id);
             let removed = 0;
+            let removedOnline = 0;
 
             for (const op of e.ops ?? []) {
                 if (Array.isArray(op.items)) {
-                    const kept = op.items.filter((it: any) => {
-                        if (!gone(itemUser(it))) return true;
+                    let group: any = null;
+                    const kept: any[] = [];
+                    for (const item of op.items) {
+                        if (item?.group) {
+                            group = item.group;
+                            kept.push(item);
+                            continue;
+                        }
+                        if (!gone(itemUser(item))) {
+                            kept.push(item);
+                            continue;
+                        }
                         removed++;
-                        return false;
-                    });
-                    if (kept.length !== op.items.length) op.items = kept;
+                        if (group?.id === "online" || group?.id === "0") removedOnline++;
+                        if (typeof group?.count === "number") group.count = Math.max(0, group.count - 1);
+                        const listed = groupOf(group?.id);
+                        if (typeof listed?.count === "number") listed.count = Math.max(0, listed.count - 1);
+                    }
+                    if (kept.length !== op.items.length) {
+                        const shrink = op.items.length - kept.length;
+                        op.items = kept;
+                        if (Array.isArray(op.range) && typeof op.range[1] === "number")
+                            op.range = [op.range[0], Math.max(op.range[0], op.range[1] - shrink)];
+                    }
                 }
                 if (op.item && gone(itemUser(op.item))) {
                     removed++;
@@ -84,9 +106,8 @@ function handle(e: any): boolean {
 
             if (removed) {
                 if (typeof e.memberCount === "number") e.memberCount = Math.max(0, e.memberCount - removed);
-                if (typeof e.onlineCount === "number") e.onlineCount = Math.max(0, e.onlineCount - removed);
-                for (const g of e.groups ?? [])
-                    if (typeof g?.count === "number") g.count = Math.max(0, g.count - removed);
+                if (typeof e.onlineCount === "number" && removedOnline)
+                    e.onlineCount = Math.max(0, e.onlineCount - removedOnline);
                 diag.rows += removed;
             }
             return false;
