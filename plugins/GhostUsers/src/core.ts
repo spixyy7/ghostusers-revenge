@@ -50,6 +50,8 @@ type Store = {
     reactionCache: Record<string, string[]>;
     /** prints what it can find in the client to the log — off by default */
     debug: boolean;
+    /** one-time upgrade of records made when hiding meant "group DMs only" */
+    migratedScopes: boolean;
 };
 
 export const store = storage as unknown as Store;
@@ -58,15 +60,29 @@ export function initStorage() {
     store.users ??= {};
     store.reactionCache ??= {};
     store.debug ??= false;
+    // Hidden means hidden — everywhere, unless someone narrows it themselves.
     store.defaults ??= {
         scopeGroups: true,
-        scopeServers: false,
-        scopeDMs: false,
+        scopeServers: true,
+        scopeDMs: true,
         autoVoiceMute: true,
         hideMemberList: true,
         hideMentions: true,
     };
-    for (const key of OPT_KEYS) store.defaults[key] ??= key === "scopeServers" || key === "scopeDMs" ? false : true;
+    for (const key of OPT_KEYS) store.defaults[key] ??= true;
+
+    // Anyone hidden while servers and DMs were off by default, and never touched
+    // since, is brought up to the new meaning of "hidden". A record that was
+    // actually edited is left exactly as its owner set it.
+    if (!store.migratedScopes) {
+        const users = { ...store.users };
+        for (const [id, rec] of Object.entries(users)) {
+            const untouched = rec.scopeGroups === true && rec.scopeServers === false && rec.scopeDMs === false;
+            if (untouched) users[id] = { ...rec, scopeServers: true, scopeDMs: true };
+        }
+        store.users = users;
+        store.migratedScopes = true;
+    }
 }
 
 export const anyHidden = () => Object.keys(store.users ?? {}).length > 0;

@@ -54,6 +54,8 @@ const ringUserId = (r: any) =>
  */
 export function filterCallEvent(e: any): void {
     const chId = e.channelId ?? e.channel_id;
+    const before = Array.isArray(e.ringing) ? e.ringing.length
+        : Array.isArray(e.ongoingRings) ? e.ongoingRings.length : 0;
 
     const vsKey = Array.isArray(e.voiceStates) ? "voiceStates"
         : Array.isArray(e.voice_states) ? "voice_states" : null;
@@ -71,6 +73,12 @@ export function filterCallEvent(e: any): void {
     const evidence = hiddenInCall(chId) > 0 || hiddenDmRecipient(chId);
     const visible = vsKey ? e[vsKey].length : null;
     if (evidence && visible === 0 && ringKey && e[ringKey].length) e[ringKey] = [];
+
+    console.log(
+        `[GhostUsers] ${e.type} ch=${chId} rings ${before}->${ringKey ? e[ringKey].length : "n/a"}`
+        + ` participants=${visible ?? "not in payload"} hiddenKnownInCall=${hiddenInCall(chId)}`
+        + ` dmWithHidden=${hiddenDmRecipient(chId)}`,
+    );
 }
 
 /** Voice states: a hidden person joining is presented as having left, so the store

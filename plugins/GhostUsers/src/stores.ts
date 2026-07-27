@@ -244,6 +244,8 @@ export function patchStores(patches: (() => void)[]) {
 
     for (const storeName of ["VoiceStateStore", "SortedVoiceStateStore"]) {
         on(storeName, "getVoiceStatesForChannel", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.forChannel`);
+        on(storeName, "getVoiceStatesForChannelAlt", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.forChannelAlt`);
+        on(storeName, "getVideoVoiceStatesForChannel", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.video`);
         on(storeName, "getVoiceStates", ([a], ret) => filterStates(ret, a), `${storeName}.states`);
         on(storeName, "getAllVoiceStates", (_a, ret) => {
             if (!ret || typeof ret !== "object") return ret;
