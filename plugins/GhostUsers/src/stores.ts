@@ -6,7 +6,7 @@
 
 import { after } from "@vendetta/patcher";
 import { findByStoreName } from "@vendetta/metro";
-import { anyHidden, diag, isHiddenIn, isHidden, mark, onHiddenSetChanged, opt, SelectedChannelStore } from "./core";
+import { anyHidden, diag, isHiddenIn, isHidden, mark, onHiddenSetChanged, opt, SelectedChannelStore, store } from "./core";
 import { learnReactors, emojiKey } from "./reactions";
 
 const idOf = (x: any): string | undefined =>
@@ -192,12 +192,31 @@ export function patchStores(patches: (() => void)[]) {
         }
     };
 
+    /** How many hidden people are actually in this server. Membership is asked of
+        the app rather than assumed, so a server they are not in keeps its count. */
+    const hiddenInGuild = (guildId?: string) => {
+        if (!guildId) return 0;
+        try {
+            const members = findByStoreName("GuildMemberStore");
+            let n = 0;
+            for (const id of Object.keys(store.users ?? {})) {
+                if (!isHiddenIn(id, undefined, guildId) || !opt(id, "hideMemberList")) continue;
+                const isMember = members?.isMember?.(guildId, id)
+                    ?? !!members?.getMember?.(guildId, id)
+                    ?? true;
+                if (isMember) n++;
+            }
+            return n;
+        } catch {
+            return 0;
+        }
+    };
+
     on("GuildMemberCountStore", "getMemberCount", ([guildId], ret) =>
-        typeof ret === "number" ? Math.max(0, ret - countHiddenIn(SelectedChannelStore?.getChannelId?.())) : ret,
+        typeof ret === "number" ? Math.max(0, ret - hiddenInGuild(guildId)) : ret,
         "memberCount");
 
-    on("GuildMemberCountStore", "getOnlineCount", ([guildId], ret) =>
-        typeof ret === "number" ? Math.max(0, ret - countHiddenIn(SelectedChannelStore?.getChannelId?.())) : ret,
+    on("GuildMemberCountStore", "getOnlineCount", ([guildId], ret) => ret,
         "onlineCount");
 
     on("ChannelMemberCountStore", "getMemberCount", ([channelId], ret) =>
