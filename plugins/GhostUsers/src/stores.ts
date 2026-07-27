@@ -33,14 +33,10 @@ export function patchStores(patches: (() => void)[]) {
         const memo: Record<string, { gen: number; from: any; copy: any }> = {};
         patches.push(
             after("getChannel", ChannelStore, ([channelId]: any[], ch: any) => {
-                let step = "enter";
                 try {
                     if (!ch) return ch;
-                    step = "anyHidden";
                     if (!anyHidden()) return ch;
-                    step = "type";
                     if (ch.type !== 3) return ch;
-                    step = "memo";
                     const cached = memo[channelId];
                     if (cached && cached.gen === generation && cached.from === ch) return cached.copy;
 
@@ -53,14 +49,9 @@ export function patchStores(patches: (() => void)[]) {
                     };
                     const filterList = (list: any) =>
                         Array.isArray(list) ? list.filter((r: any) => !dropped(r)) : list;
-
-                    step = "recipients";
                     const recipients = filterList(ch.recipients);
-                    step = "rawRecipients";
                     const rawRecipients = filterList(ch.rawRecipients);
-                    step = "recipientIds";
                     const recipientIds = filterList(ch.recipientIds);
-                    step = "compare";
                     const changed =
                         recipients?.length !== ch.recipients?.length
                         || rawRecipients?.length !== ch.rawRecipients?.length
@@ -94,11 +85,7 @@ export function patchStores(patches: (() => void)[]) {
                     diag.rows++;
                     return copy;
                 } catch (e: any) {
-                    console.log(
-                        `[GhostUsers] getChannel failed at ${step}: ${e?.message}`
-                        + ` | anyHidden=${typeof anyHidden} isHidden=${typeof isHidden} opt=${typeof opt}`
-                        + ` idOf=${typeof idOf} Map=${typeof Map}`,
-                    );
+                    console.log(`[GhostUsers] getChannel: ${e?.message}`);
                     return ch;
                 }
             }),

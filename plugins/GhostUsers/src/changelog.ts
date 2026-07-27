@@ -1,8 +1,16 @@
 // What changed, shown in the plugin's own settings. Written for whoever uses it.
 
-export const VERSION = "1.2.0";
+export const VERSION = "1.7.0";
 
 export const CHANGELOG: { version: string; lines: string[] }[] = [
+    {
+        version: "1.7.0",
+        lines: [
+            "Hiding works. What kept it from working was not Discord but the way this plugin was packaged: the bundler gave two unrelated variables the same short name, so a cache became a piece of text at runtime and every channel it tried to filter threw. Names are left alone now.",
+            "Everything is filtered where the app reads it rather than after it is drawn, so nobody flashes on screen first: the member list and its counters, typing, reactions and who reacted, calls and who is in them.",
+            "A hidden person is dropped from a group's member list, its count, and the line of names under the group's title.",
+        ],
+    },
     {
         version: "1.2.0",
         lines: [

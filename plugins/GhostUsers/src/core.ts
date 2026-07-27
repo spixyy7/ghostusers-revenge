@@ -48,6 +48,8 @@ type Store = {
         Ids are STRINGS on purpose: a 19-digit snowflake does not survive a JSON
         number, which silently corrupted the Android cache for five versions. */
     reactionCache: Record<string, string[]>;
+    /** prints what it can find in the client to the log — off by default */
+    debug: boolean;
 };
 
 export const store = storage as unknown as Store;
@@ -55,6 +57,7 @@ export const store = storage as unknown as Store;
 export function initStorage() {
     store.users ??= {};
     store.reactionCache ??= {};
+    store.debug ??= false;
     store.defaults ??= {
         scopeGroups: true,
         scopeServers: false,
