@@ -75,6 +75,12 @@ export function reconnoitre() {
         }
         log(`sheet row components: ${[...rowNames].slice(0, 10).join(", ") || "none"}`);
 
+        // 6b. which newer language features this engine actually has
+        log(`engine: getOwnPropertyDescriptors=${typeof (Object as any).getOwnPropertyDescriptors}`
+            + ` fromEntries=${typeof (Object as any).fromEntries}`
+            + ` structuredClone=${typeof (globalThis as any).structuredClone}`
+            + ` flat=${typeof [].flat}`);
+
         // 7. the dispatcher keeps its methods on the prototype
         const dproto = Object.getPrototypeOf(FluxDispatcher ?? {}) ?? {};
         log(`dispatcher proto: ${Object.getOwnPropertyNames(dproto).filter(k => k !== "constructor").slice(0, 14).join(", ")}`);

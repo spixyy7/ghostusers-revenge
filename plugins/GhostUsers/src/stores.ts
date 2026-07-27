@@ -59,7 +59,13 @@ export function patchStores(patches: (() => void)[]) {
                     // (isMultiUserDM and friends). Copying only the enumerable
                     // properties strips those and the screen dies on "undefined is
                     // not a function" — so every descriptor comes along.
-                    const copy = Object.create(Object.getPrototypeOf(ch), Object.getOwnPropertyDescriptors(ch));
+                    // built one descriptor at a time: the plural form of this call is
+                    // newer than the engine some builds run on
+                    const copy = Object.create(Object.getPrototypeOf(ch));
+                    for (const key of Object.getOwnPropertyNames(ch)) {
+                        const d = Object.getOwnPropertyDescriptor(ch, key);
+                        if (d) Object.defineProperty(copy, key, d);
+                    }
                     const set = (key: string, value: any) => {
                         if (value === undefined) return;
                         Object.defineProperty(copy, key, {
