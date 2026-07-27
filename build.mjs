@@ -28,15 +28,16 @@ const plugins = [
             const tsx = ts ? ext.endsWith("x") : undefined;
             const jsx = !ts ? ext.endsWith("x") : undefined;
 
+            // Types and JSX are stripped, nothing else. Down-levelling to old
+            // browsers used to rewrite block scopes and let two unrelated variables
+            // end up sharing a name — a cache turned into a store's name string at
+            // runtime. Hermes speaks modern JavaScript; there is nothing to lower.
             const result = await swc.transform(code, {
                 filename: id,
                 jsc: {
+                    target: "es2022",
                     externalHelpers: true,
                     parser: { syntax: ts ? "typescript" : "ecmascript", tsx, jsx },
-                },
-                env: {
-                    targets: "defaults",
-                    include: ["transform-classes", "transform-arrow-functions"],
                 },
             });
             return result.code;
