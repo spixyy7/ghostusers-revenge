@@ -9,8 +9,23 @@ import { anyHidden, diag, isHiddenIn, mark, sawEvent, shouldHideMessage, store }
 import { filterCallEvent, isHiddenStream, maskVoiceStates } from "./calls";
 import { forgetReactions, learnFromEvent, learnFromReactorList } from "./reactions";
 
+const memberEventsSeen = new Set<string>();
+
+/** Reports, once per kind, any action that carries people — that is how the screen
+    which still lists a hidden person gets traced back to its source. */
+function noteMemberEvent(e: any) {
+    if (!/MEMBER|USERS|CHUNK/i.test(e.type) || memberEventsSeen.has(e.type)) return;
+    memberEventsSeen.add(e.type);
+    const shape = Object.entries(e)
+        .filter(([k]) => k !== "type")
+        .map(([k, v]) => `${k}:${Array.isArray(v) ? `array(${v.length})` : typeof v}`)
+        .join(" ");
+    console.log(`[GhostUsers] member event ${e.type} ${shape}`);
+}
+
 /** true = the event is swallowed and never happened for this client. */
 function handle(e: any): boolean {
+    noteMemberEvent(e);
     switch (e.type) {
         case "MESSAGE_CREATE":
         case "MESSAGE_UPDATE": {
