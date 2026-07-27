@@ -39,9 +39,11 @@ export function patchMessages(patches: (() => void)[]) {
                             : typeof ret.toArray === "function"
                                 ? ret.toArray()
                                 : null;
-                    if (!diag.collection)
-                        diag.collection = `${Array.isArray(ret) ? "array" : Object.keys(ret).slice(0, 6).join(",")}`
+                    if (!diag.collection) {
+                        diag.collection = `${Array.isArray(ret) ? "array" : Object.keys(ret).slice(0, 8).join(",")}`
                             + ` len=${list?.length ?? "?"}`;
+                        console.log(`[GhostUsers] message collection: ${diag.collection}`);
+                    }
                     if (!Array.isArray(list) || !list.length) return ret;
                     const kept = list.filter(m => !shouldHideMessage(m, channelId));
                     if (kept.length === list.length) return ret;

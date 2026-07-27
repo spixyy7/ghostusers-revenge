@@ -5,7 +5,7 @@
 
 import { instead } from "@vendetta/patcher";
 import { FluxDispatcher } from "@vendetta/metro/common";
-import { anyHidden, diag, isHiddenIn, mark, sawEvent, shouldHideMessage, store } from "./core";
+import { anyHidden, diag, isHiddenIn, mark, opt, sawEvent, shouldHideMessage, store } from "./core";
 import { filterCallEvent, isHiddenStream, maskVoiceStates } from "./calls";
 import { forgetReactions, learnFromEvent, learnFromReactorList } from "./reactions";
 
@@ -52,6 +52,43 @@ function handle(e: any): boolean {
             for (const m of e.messages)
                 if (m?.referenced_message && isHiddenIn(m.referenced_message.author?.id, chId))
                     m.referenced_message = null;
+            return false;
+        }
+
+        case "GUILD_MEMBER_LIST_UPDATE": {
+            // A server's member list arrives as operations on a list, with the
+            // counts alongside. Hidden people are taken out of both, so the list is
+            // right from the first frame instead of being corrected afterwards.
+            const guildId = e.guildId ?? e.guild_id;
+            const gone = (uid?: string) =>
+                !!uid && isHiddenIn(uid, undefined, guildId) && opt(uid, "hideMemberList");
+            const itemUser = (it: any) => it?.member?.user?.id ?? it?.member?.userId ?? it?.user?.id;
+            let removed = 0;
+
+            for (const op of e.ops ?? []) {
+                if (Array.isArray(op.items)) {
+                    const kept = op.items.filter((it: any) => {
+                        if (!gone(itemUser(it))) return true;
+                        removed++;
+                        return false;
+                    });
+                    if (kept.length !== op.items.length) op.items = kept;
+                }
+                if (op.item && gone(itemUser(op.item))) {
+                    removed++;
+                    op.items = [];
+                    op.item = null;
+                    op.op = "NONE";
+                }
+            }
+
+            if (removed) {
+                if (typeof e.memberCount === "number") e.memberCount = Math.max(0, e.memberCount - removed);
+                if (typeof e.onlineCount === "number") e.onlineCount = Math.max(0, e.onlineCount - removed);
+                for (const g of e.groups ?? [])
+                    if (typeof g?.count === "number") g.count = Math.max(0, g.count - removed);
+                diag.rows += removed;
+            }
             return false;
         }
 
