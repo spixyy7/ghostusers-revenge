@@ -36,8 +36,15 @@ export function patchStores(patches: (() => void)[]) {
                     const cached = memo.get(channelId);
                     if (cached && cached.gen === generation && cached.from === ch) return cached.copy;
 
+                    // NB: the scope is decided from the channel in hand, never by
+                    // asking the store what kind of channel this is — that call comes
+                    // straight back here and never ends.
+                    const dropped = (r: any) => {
+                        const id = idOf(r);
+                        return !!id && isHidden(id) && opt(id, "scopeGroups") && opt(id, "hideMemberList");
+                    };
                     const filterList = (list: any) =>
-                        Array.isArray(list) ? list.filter((r: any) => !hiddenInList(idOf(r), channelId)) : list;
+                        Array.isArray(list) ? list.filter((r: any) => !dropped(r)) : list;
 
                     const recipients = filterList(ch.recipients);
                     const rawRecipients = filterList(ch.rawRecipients);
