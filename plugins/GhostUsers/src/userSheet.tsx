@@ -46,7 +46,7 @@ export function patchUserSheet(patches: (() => void)[]) {
 
     patches.push(
         before("openLazy", LazyActionSheet, ([component, key, props]: any[]) => {
-            sawSheet(String(key ?? "?"));
+            sawSheet(String(key ?? "?"), props);
             const userId = props?.userId ?? props?.user?.id ?? props?.user?.userId;
             if (!userId) return;
             if (String(key ?? "").includes("Message")) return;

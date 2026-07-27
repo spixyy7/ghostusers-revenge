@@ -223,8 +223,9 @@ export function sawEvent(type: string) {
     while (diag.eventTypes.length > 10) diag.eventTypes.shift();
 }
 
-export function sawSheet(key: string) {
+export function sawSheet(key: string, props?: any) {
     if (!key || diag.sheets.includes(key)) return;
+    console.log(`[GhostUsers] sheet "${key}" props=${props && typeof props === "object" ? Object.keys(props).slice(0, 10).join(",") : typeof props}`);
     diag.sheets.push(key);
     while (diag.sheets.length > 8) diag.sheets.shift();
 }
