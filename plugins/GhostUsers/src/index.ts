@@ -5,6 +5,7 @@ import { patchMembers } from "./members";
 import { patchUserSheet } from "./userSheet";
 import { clearCallMemory } from "./calls";
 import { clearLookupState, resolveFetcher } from "./reactions";
+import { reconnoitre } from "./discover";
 import Settings from "./Settings";
 
 let patches: (() => void)[] = [];
@@ -21,7 +22,9 @@ export const onLoad = () => {
     patchMembers(patches);
     patchUserSheet(patches);
 
-    const missing = Object.entries(diag.patches).filter(([, v]) => v !== "ok").map(([k]) => k);
+    reconnoitre();
+
+    const missing = Object.entries(diag.patches).filter(([, v]) => !String(v).startsWith("ok")).map(([k]) => k);
     console.log(
         `[GhostUsers] loaded, ${Object.keys(store.users ?? {}).length} hidden`
         + (missing.length ? `, unavailable: ${missing.join(", ")}` : ""),

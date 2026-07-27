@@ -81,26 +81,44 @@ function handle(e: any): boolean {
     }
 }
 
+/** An action can reach both entry points; it must only be judged once. */
+const seen = new WeakSet<object>();
+
 export function patchDispatcher(patches: (() => void)[]) {
-    if (!FluxDispatcher?.dispatch) {
+    if (!FluxDispatcher) {
         mark("dispatcher", false, "FluxDispatcher not found");
         return;
     }
-    patches.push(
-        instead("dispatch", FluxDispatcher, (args: any[], orig: any) => {
-            const e = args[0];
-            if (!e?.type || !anyHidden()) return orig.apply(FluxDispatcher, args);
-            try {
-                diag.events++;
-                sawEvent(e.type);
-                if (handle(e)) return;
-            } catch (err) {
-                console.log("[GhostUsers] dispatch", e?.type, err);
-            }
-            return orig.apply(FluxDispatcher, args);
-        }),
+
+    // Gateway traffic does not necessarily come through the public dispatch(): on
+    // this client almost nothing did, which is why hiding appeared to do nothing at
+    // all. Both entry points are taken, whichever exist.
+    const entries = ["dispatch", "_dispatch", "dispatchToLastSubscribed"].filter(
+        name => typeof (FluxDispatcher as any)[name] === "function",
     );
-    mark("dispatcher", true);
+
+    for (const name of entries) {
+        patches.push(
+            instead(name, FluxDispatcher, (args: any[], orig: any) => {
+                const e = args[0];
+                if (!e?.type || !anyHidden()) return orig.apply(FluxDispatcher, args);
+                try {
+                    if (!seen.has(e)) {
+                        seen.add(e);
+                        diag.events++;
+                        sawEvent(e.type);
+                        if (handle(e)) return;
+                    }
+                } catch (err) {
+                    console.log("[GhostUsers] dispatch", e?.type, err);
+                }
+                return orig.apply(FluxDispatcher, args);
+            }),
+        );
+    }
+
+    mark("dispatcher", entries.length > 0, entries.join("+") || "no dispatch method");
+    if (entries.length) mark("dispatcher", true, entries.join("+"));
 }
 
 export const hiddenCount = () => Object.keys(store.users ?? {}).length;
