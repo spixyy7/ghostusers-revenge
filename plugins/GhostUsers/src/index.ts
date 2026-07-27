@@ -2,6 +2,7 @@ import { diag, initStorage, mark, store } from "./core";
 import { patchDispatcher } from "./dispatcher";
 import { patchMessages } from "./messages";
 import { patchStores } from "./stores";
+import { setUpMute } from "./mute";
 import { patchUserSheet } from "./userSheet";
 import { clearCallMemory } from "./calls";
 import { clearLookupState } from "./reactions";
@@ -21,6 +22,7 @@ export const onLoad = () => {
     patchMessages(patches);
     patchStores(patches);
     patchUserSheet(patches);
+    setUpMute();
 
     if (store.debug) reconnoitre();
     startSonar(patches);

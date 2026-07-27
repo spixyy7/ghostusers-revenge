@@ -158,6 +158,7 @@ export function hideUser(id: string, tag?: string) {
     for (const key of OPT_KEYS) rec[key] = store.defaults[key];
     store.users = { ...store.users, [id]: rec };
     resetReactionKnowledge();
+    announceHide(id, true);
 }
 
 export function showUser(id: string) {
@@ -165,6 +166,7 @@ export function showUser(id: string) {
     delete next[id];
     store.users = next;
     resetReactionKnowledge();
+    announceHide(id, false);
 }
 
 /** Everything learned about reactors is thrown away when the hidden set changes —
@@ -182,6 +184,19 @@ export function resetReactionKnowledge() {
 /** Called when the hidden set changes, so cached copies of data are dropped. */
 const invalidators: (() => void)[] = [];
 export const onHiddenSetChanged = (fn: () => void) => invalidators.push(fn);
+
+/** Called with one person and whether they are now hidden — used for local mute. */
+const hideListeners: ((id: string, hidden: boolean) => void)[] = [];
+export const onHideChanged = (fn: (id: string, hidden: boolean) => void) => hideListeners.push(fn);
+export function announceHide(id: string, hidden: boolean) {
+    for (const fn of hideListeners) {
+        try {
+            fn(id, hidden);
+        } catch (e) {
+            console.log("[GhostUsers] hide listener", e);
+        }
+    }
+}
 
 export const diag = {
     patches: {} as Record<string, string>,

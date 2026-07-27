@@ -10,6 +10,7 @@ import { showToast } from "@vendetta/ui/toasts";
 
 import { diag, hideUser, OPT_KEYS, showUser, store, UserStore } from "./core";
 import { CHANGELOG, VERSION } from "./changelog";
+import { applyMute } from "./mute";
 
 const { FormSection, FormRow, FormSwitchRow, FormInput, FormDivider, FormText } = Forms;
 const { ScrollView, View } = General;
@@ -94,6 +95,7 @@ export default function Settings() {
                             value: rec[key] ?? store.defaults[key],
                             onValueChange: (v: boolean) => {
                                 store.users = { ...store.users, [id]: { ...rec, [key]: v } };
+                                if (key === "autoVoiceMute") applyMute(id, v);
                             },
                         }),
                     ),
