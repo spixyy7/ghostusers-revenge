@@ -55,16 +55,28 @@ export function patchStores(patches: (() => void)[]) {
                         || recipientIds?.length !== ch.recipientIds?.length;
                     if (!changed) return ch;
 
-                    const copy = Object.assign(Object.create(Object.getPrototypeOf(ch)), ch, {
-                        recipients,
-                        rawRecipients,
-                        recipientIds,
-                    });
+                    // A channel is a class instance whose methods the app calls
+                    // (isMultiUserDM and friends). Copying only the enumerable
+                    // properties strips those and the screen dies on "undefined is
+                    // not a function" — so every descriptor comes along.
+                    const copy = Object.create(Object.getPrototypeOf(ch), Object.getOwnPropertyDescriptors(ch));
+                    const set = (key: string, value: any) => {
+                        if (value === undefined) return;
+                        Object.defineProperty(copy, key, {
+                            value,
+                            writable: true,
+                            enumerable: true,
+                            configurable: true,
+                        });
+                    };
+                    set("recipients", recipients);
+                    set("rawRecipients", rawRecipients);
+                    set("recipientIds", recipientIds);
                     memo.set(channelId, { gen: generation, from: ch, copy });
                     diag.rows++;
                     return copy;
-                } catch (e) {
-                    console.log("[GhostUsers] getChannel", e);
+                } catch (e: any) {
+                    console.log(`[GhostUsers] getChannel failed: ${e?.message} @ ${String(e?.stack).split("\n")[1]}`);
                     return ch;
                 }
             }),
