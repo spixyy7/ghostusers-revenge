@@ -6,6 +6,7 @@ import { patchUserSheet } from "./userSheet";
 import { clearCallMemory } from "./calls";
 import { clearLookupState } from "./reactions";
 import { reconnoitre } from "./discover";
+import { startSonar } from "./sonar";
 import Settings from "./Settings";
 
 let patches: (() => void)[] = [];
@@ -22,6 +23,7 @@ export const onLoad = () => {
     patchUserSheet(patches);
 
     if (store.debug) reconnoitre();
+    startSonar(patches);
 
     const missing = Object.entries(diag.patches).filter(([, v]) => !String(v).startsWith("ok")).map(([k]) => k);
     for (const [id, rec] of Object.entries(store.users ?? {}))
