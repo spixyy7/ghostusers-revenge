@@ -28,7 +28,9 @@ export function patchStores(patches: (() => void)[]) {
        without the hidden people in it — memoised, because this is read constantly. */
     const ChannelStore = findByStoreName("ChannelStore");
     if (ChannelStore?.getChannel) {
-        const memo = new Map<string, { gen: number; from: any; copy: any }>();
+        // a plain object, not a Map: this engine handed back a Map whose get()
+        // was undefined, and a cache is not worth a mystery
+        const memo: Record<string, { gen: number; from: any; copy: any }> = {};
         patches.push(
             after("getChannel", ChannelStore, ([channelId]: any[], ch: any) => {
                 let step = "enter";
@@ -39,7 +41,7 @@ export function patchStores(patches: (() => void)[]) {
                     step = "type";
                     if (ch.type !== 3) return ch;
                     step = "memo";
-                    const cached = memo.get(channelId);
+                    const cached = memo[channelId];
                     if (cached && cached.gen === generation && cached.from === ch) return cached.copy;
 
                     // NB: the scope is decided from the channel in hand, never by
@@ -88,14 +90,14 @@ export function patchStores(patches: (() => void)[]) {
                     set("recipients", recipients);
                     set("rawRecipients", rawRecipients);
                     set("recipientIds", recipientIds);
-                    memo.set(channelId, { gen: generation, from: ch, copy });
+                    memo[channelId] = { gen: generation, from: ch, copy };
                     diag.rows++;
                     return copy;
                 } catch (e: any) {
                     console.log(
                         `[GhostUsers] getChannel failed at ${step}: ${e?.message}`
                         + ` | anyHidden=${typeof anyHidden} isHidden=${typeof isHidden} opt=${typeof opt}`
-                        + ` idOf=${typeof idOf} memoGet=${typeof memo?.get}`,
+                        + ` idOf=${typeof idOf} Map=${typeof Map}`,
                     );
                     return ch;
                 }
