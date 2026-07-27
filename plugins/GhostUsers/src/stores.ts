@@ -33,7 +33,12 @@ export function patchStores(patches: (() => void)[]) {
             after("getChannel", ChannelStore, ([channelId]: any[], ch: any) => {
                 let step = "enter";
                 try {
-                    if (!ch || !anyHidden() || ch.type !== 3) return ch;
+                    if (!ch) return ch;
+                    step = "anyHidden";
+                    if (!anyHidden()) return ch;
+                    step = "type";
+                    if (ch.type !== 3) return ch;
+                    step = "memo";
                     const cached = memo.get(channelId);
                     if (cached && cached.gen === generation && cached.from === ch) return cached.copy;
 
@@ -87,7 +92,11 @@ export function patchStores(patches: (() => void)[]) {
                     diag.rows++;
                     return copy;
                 } catch (e: any) {
-                    console.log(`[GhostUsers] getChannel failed at ${step}: ${e?.message}`);
+                    console.log(
+                        `[GhostUsers] getChannel failed at ${step}: ${e?.message}`
+                        + ` | anyHidden=${typeof anyHidden} isHidden=${typeof isHidden} opt=${typeof opt}`
+                        + ` idOf=${typeof idOf} memoGet=${typeof memo?.get}`,
+                    );
                     return ch;
                 }
             }),
