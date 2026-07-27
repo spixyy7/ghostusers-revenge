@@ -24,6 +24,8 @@ export const onLoad = () => {
     if (store.debug) reconnoitre();
 
     const missing = Object.entries(diag.patches).filter(([, v]) => !String(v).startsWith("ok")).map(([k]) => k);
+    for (const [id, rec] of Object.entries(store.users ?? {}))
+        console.log(`[GhostUsers] scope ${rec.tag ?? id}: groups=${rec.scopeGroups} servers=${rec.scopeServers} dms=${rec.scopeDMs} memberList=${rec.hideMemberList}`);
     console.log(
         `[GhostUsers] loaded, ${Object.keys(store.users ?? {}).length} hidden`
         + (missing.length ? `, unavailable: ${missing.join(", ")}` : ""),

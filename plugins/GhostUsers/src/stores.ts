@@ -129,8 +129,14 @@ export function patchStores(patches: (() => void)[]) {
     }, "typing");
 
     /* ---- member list: the rows the panel draws ---- */
+    let rowsLogged = 0;
     on("ChannelMemberStore", "getRows", (args, ret) => {
         if (!Array.isArray(ret)) return ret;
+        if (rowsLogged < 3) {
+            rowsLogged++;
+            console.log(`[GhostUsers] getRows args=${args.map(a => typeof a === "object" ? "obj" : a).join(",")}`
+                + ` rows=${ret.length} first=${JSON.stringify(ret[0])?.slice(0, 160)}`);
+        }
         const channelId = args[1] ?? args[0];
         const kept = ret.filter((row: any) => {
             const userId = idOf(row?.user) ?? row?.userId ?? idOf(row);
