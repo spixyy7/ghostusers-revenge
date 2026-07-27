@@ -81,27 +81,52 @@ function handle(e: any): boolean {
     }
 }
 
-/** An action can reach both entry points; it must only be judged once. */
-const seen = new WeakSet<object>();
-
 export function patchDispatcher(patches: (() => void)[]) {
-    if (!FluxDispatcher) {
+    const fd: any = FluxDispatcher;
+    if (!fd) {
         mark("dispatcher", false, "FluxDispatcher not found");
         return;
     }
 
-    // Gateway traffic does not necessarily come through the public dispatch(): on
-    // this client almost nothing did, which is why hiding appeared to do nothing at
-    // all. Both entry points are taken, whichever exist.
-    const entries = ["dispatch", "_dispatch", "dispatchToLastSubscribed"].filter(
-        name => typeof (FluxDispatcher as any)[name] === "function",
-    );
+    // Flux has a proper way to refuse an action — an interceptor that returns true
+    // drops it before any store sees it. That beats patching dispatch(), which on
+    // this client barely carries any gateway traffic at all.
+    if (typeof fd.addInterceptor === "function") {
+        const interceptor = (e: any) => {
+            if (!e?.type || !anyHidden()) return false;
+            try {
+                diag.events++;
+                sawEvent(e.type);
+                return handle(e);
+            } catch (err) {
+                console.log("[GhostUsers] intercept", e?.type, err);
+                return false;
+            }
+        };
+        const removed = fd.addInterceptor(interceptor);
+        patches.push(() => {
+            try {
+                if (typeof removed === "function") removed();
+                else if (Array.isArray(fd._interceptors)) {
+                    const i = fd._interceptors.indexOf(interceptor);
+                    if (i >= 0) fd._interceptors.splice(i, 1);
+                }
+            } catch (e) {
+                console.log("[GhostUsers] remove interceptor", e);
+            }
+        });
+        mark("dispatcher", true, "addInterceptor");
+        return;
+    }
 
+    // fallback for a client without interceptors: take every dispatch entry point
+    const seen = new WeakSet<object>();
+    const entries = ["dispatch", "_dispatch"].filter(name => typeof fd[name] === "function");
     for (const name of entries) {
         patches.push(
-            instead(name, FluxDispatcher, (args: any[], orig: any) => {
+            instead(name, fd, (args: any[], orig: any) => {
                 const e = args[0];
-                if (!e?.type || !anyHidden()) return orig.apply(FluxDispatcher, args);
+                if (!e?.type || !anyHidden()) return orig.apply(fd, args);
                 try {
                     if (!seen.has(e)) {
                         seen.add(e);
@@ -112,13 +137,11 @@ export function patchDispatcher(patches: (() => void)[]) {
                 } catch (err) {
                     console.log("[GhostUsers] dispatch", e?.type, err);
                 }
-                return orig.apply(FluxDispatcher, args);
+                return orig.apply(fd, args);
             }),
         );
     }
-
-    mark("dispatcher", entries.length > 0, entries.join("+") || "no dispatch method");
-    if (entries.length) mark("dispatcher", true, entries.join("+"));
+    mark("dispatcher", entries.length > 0, entries.join("+") || "none");
 }
 
 export const hiddenCount = () => Object.keys(store.users ?? {}).length;

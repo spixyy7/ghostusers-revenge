@@ -1,7 +1,7 @@
 import { diag, initStorage, mark, store } from "./core";
 import { patchDispatcher } from "./dispatcher";
 import { patchMessages } from "./messages";
-import { patchMembers } from "./members";
+import { patchStores } from "./stores";
 import { patchUserSheet } from "./userSheet";
 import { clearCallMemory } from "./calls";
 import { clearLookupState, resolveFetcher } from "./reactions";
@@ -19,7 +19,7 @@ export const onLoad = () => {
     mark("reactorFetch", resolveFetcher());
     patchDispatcher(patches);
     patchMessages(patches);
-    patchMembers(patches);
+    patchStores(patches);
     patchUserSheet(patches);
 
     reconnoitre();
