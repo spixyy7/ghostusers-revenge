@@ -6,7 +6,7 @@
 
 import { after } from "@vendetta/patcher";
 import { findByStoreName } from "@vendetta/metro";
-import { anyHidden, diag, isHiddenIn, isHidden, mark, opt, SelectedChannelStore } from "./core";
+import { anyHidden, diag, isHiddenIn, isHidden, mark, onHiddenSetChanged, opt, SelectedChannelStore } from "./core";
 import { learnReactors, emojiKey } from "./reactions";
 
 const idOf = (x: any): string | undefined =>
@@ -16,7 +16,57 @@ const idOf = (x: any): string | undefined =>
 const hiddenInList = (userId?: string, channelId?: string) =>
     !!userId && isHiddenIn(userId, channelId) && opt(userId, "hideMemberList");
 
+/** Bumped whenever the hidden set changes, so cached copies are thrown away. */
+let generation = 0;
+export const bumpGeneration = () => generation++;
+
+onHiddenSetChanged(() => generation++);
+
 export function patchStores(patches: (() => void)[]) {
+    /* ---- group DMs: the member list and its count come from the channel's own
+       recipients, not from any member store. The channel is handed over as a copy
+       without the hidden people in it — memoised, because this is read constantly. */
+    const ChannelStore = findByStoreName("ChannelStore");
+    if (ChannelStore?.getChannel) {
+        const memo = new Map<string, { gen: number; from: any; copy: any }>();
+        patches.push(
+            after("getChannel", ChannelStore, ([channelId]: any[], ch: any) => {
+                try {
+                    if (!ch || !anyHidden() || ch.type !== 3) return ch;
+                    const cached = memo.get(channelId);
+                    if (cached && cached.gen === generation && cached.from === ch) return cached.copy;
+
+                    const filterList = (list: any) =>
+                        Array.isArray(list) ? list.filter((r: any) => !hiddenInList(idOf(r), channelId)) : list;
+
+                    const recipients = filterList(ch.recipients);
+                    const rawRecipients = filterList(ch.rawRecipients);
+                    const recipientIds = filterList(ch.recipientIds);
+                    const changed =
+                        recipients?.length !== ch.recipients?.length
+                        || rawRecipients?.length !== ch.rawRecipients?.length
+                        || recipientIds?.length !== ch.recipientIds?.length;
+                    if (!changed) return ch;
+
+                    const copy = Object.assign(Object.create(Object.getPrototypeOf(ch)), ch, {
+                        recipients,
+                        rawRecipients,
+                        recipientIds,
+                    });
+                    memo.set(channelId, { gen: generation, from: ch, copy });
+                    diag.rows++;
+                    return copy;
+                } catch (e) {
+                    console.log("[GhostUsers] getChannel", e);
+                    return ch;
+                }
+            }),
+        );
+        mark("groupRecipients", true);
+    } else {
+        mark("groupRecipients", false, "ChannelStore.getChannel");
+    }
+
     const on = (storeName: string, method: string, cb: (args: any[], ret: any) => any, mark$ = storeName) => {
         const store = findByStoreName(storeName);
         if (!store || typeof store[method] !== "function") {

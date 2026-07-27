@@ -152,12 +152,17 @@ export function showUser(id: string) {
     the lists get looked up again and the counts are rebuilt from scratch. */
 export function resetReactionKnowledge() {
     store.reactionCache = {};
+    for (const fn of invalidators) try { fn(); } catch { /* nothing to do */ }
     diag.lookupsSent = 0;
     diag.lookupsAnswered = 0;
 }
 
 /* ---- diagnostics: /ghost prints this, so a patch that never attached is visible
         on the phone instead of having to be guessed at from the outside ---- */
+
+/** Called when the hidden set changes, so cached copies of data are dropped. */
+const invalidators: (() => void)[] = [];
+export const onHiddenSetChanged = (fn: () => void) => invalidators.push(fn);
 
 export const diag = {
     patches: {} as Record<string, string>,
