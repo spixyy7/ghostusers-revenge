@@ -95,10 +95,18 @@ export function patchStores(patches: (() => void)[]) {
         mark("groupRecipients", false, "ChannelStore.getChannel");
     }
 
-    const on = (storeName: string, method: string, cb: (args: any[], ret: any) => any, mark$ = storeName) => {
+    const on = (
+        storeName: string,
+        method: string,
+        cb: (args: any[], ret: any) => any,
+        mark$ = storeName,
+        optional = false,
+    ) => {
         const store = findByStoreName(storeName);
         if (!store || typeof store[method] !== "function") {
-            mark(mark$, false, `${storeName}.${method}`);
+            // Some readers exist on one voice store and not the other; a build that
+            // lacks one of those is not missing anything, so it is not reported.
+            if (!optional) mark(mark$, false, `${storeName}.${method}`);
             return false;
         }
         patches.push(
@@ -296,8 +304,8 @@ export function patchStores(patches: (() => void)[]) {
 
     for (const storeName of ["VoiceStateStore", "SortedVoiceStateStore"]) {
         on(storeName, "getVoiceStatesForChannel", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.forChannel`);
-        on(storeName, "getVoiceStatesForChannelAlt", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.forChannelAlt`);
-        on(storeName, "getVideoVoiceStatesForChannel", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.video`);
+        on(storeName, "getVoiceStatesForChannelAlt", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.forChannelAlt`, true);
+        on(storeName, "getVideoVoiceStatesForChannel", ([a, b], ret) => filterStates(ret, b ?? a), `${storeName}.video`, true);
         on(storeName, "getVoiceStates", ([a], ret) => filterStates(ret, a), `${storeName}.states`);
         on(storeName, "getAllVoiceStates", (_a, ret) => {
             if (!ret || typeof ret !== "object") return ret;
