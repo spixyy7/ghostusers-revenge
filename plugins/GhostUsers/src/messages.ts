@@ -5,7 +5,7 @@
 
 import { after } from "@vendetta/patcher";
 import { findByName, findByStoreName } from "@vendetta/metro";
-import { anyHidden, mark, shouldHideMessage } from "./core";
+import { anyHidden, diag, mark, shouldHideMessage } from "./core";
 import { correctedReactions } from "./reactions";
 
 export function patchMessages(patches: (() => void)[]) {
@@ -48,6 +48,7 @@ export function patchMessages(patches: (() => void)[]) {
                     // a row that should not exist is emptied out rather than deleted:
                     // the list keeps its indices, and nothing of theirs is drawn
                     if (shouldHideMessage(msg, channelId)) {
+                        diag.rows++;
                         row.renderContentOnly = true;
                         msg.content = [];
                         msg.embeds = [];

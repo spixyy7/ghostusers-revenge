@@ -9,6 +9,7 @@ import { getAssetIDByName } from "@vendetta/ui/assets";
 import { showToast } from "@vendetta/ui/toasts";
 
 import { diag, hideUser, OPT_KEYS, showUser, store, UserStore } from "./core";
+import { CHANGELOG, VERSION } from "./changelog";
 
 const { FormSection, FormRow, FormSwitchRow, FormInput, FormDivider, FormText } = Forms;
 const { ScrollView } = General;
@@ -29,9 +30,23 @@ export default function Settings() {
 
     const ids = Object.keys(store.users ?? {});
 
+    const status = [
+        ...Object.entries(diag.stores).map(([k, v]) => `${k}: ${v}`),
+        ...Object.entries(diag.patches).map(([k, v]) => `${k}: ${v}`),
+        `events seen: ${diag.events} · messages hidden: ${diag.hiddenMsgs} · rows touched: ${diag.rows}`,
+        `reactor lookups: ${diag.lookupsSent} sent, ${diag.lookupsAnswered} answered`,
+        diag.sheets.length ? `sheets seen: ${diag.sheets.join(", ")}` : "sheets seen: none yet",
+    ].join("\n");
+
     return React.createElement(
         ScrollView,
         null,
+
+        React.createElement(
+            FormSection,
+            { title: `Status — v${VERSION} (stays on this phone)` },
+            React.createElement(FormText, { style: { paddingHorizontal: 16, paddingBottom: 12 } }, status),
+        ),
 
         React.createElement(
             FormSection,
@@ -131,11 +146,13 @@ export default function Settings() {
 
         React.createElement(
             FormSection,
-            { title: "Diagnostics" },
-            React.createElement(FormText, { style: { paddingHorizontal: 16, paddingBottom: 12 } },
-                Object.entries(diag.patches).map(([k, v]) => `${k}: ${v}`).join("\n")
-                + `\nreactor lookups: ${diag.lookupsSent} sent, ${diag.lookupsAnswered} answered`
-                + (diag.notes.length ? `\n${diag.notes.join("\n")}` : "")),
+            { title: "What's new" },
+            ...CHANGELOG.map(entry =>
+                React.createElement(FormText, {
+                    key: entry.version,
+                    style: { paddingHorizontal: 16, paddingBottom: 12 },
+                }, `${entry.version}\n• ${entry.lines.join("\n• ")}`),
+            ),
         ),
     );
 }

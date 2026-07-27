@@ -10,7 +10,7 @@ import { getAssetIDByName } from "@vendetta/ui/assets";
 import { showToast } from "@vendetta/ui/toasts";
 import { findInReactTree } from "@vendetta/utils";
 
-import { hideUser, isHidden, mark, showUser, UserStore } from "./core";
+import { hideUser, isHidden, mark, sawSheet, showUser, UserStore } from "./core";
 
 const LazyActionSheet = findByProps("openLazy", "hideActionSheet");
 const ButtonRow = findByName("ButtonRow");
@@ -42,9 +42,14 @@ export function patchUserSheet(patches: (() => void)[]) {
 
     patches.push(
         before("openLazy", LazyActionSheet, ([component, key, props]: any[]) => {
-            if (!key || !String(key).includes("UserProfile")) return;
-            const userId = props?.userId ?? props?.user?.id;
+            // every sheet that opens is noted down, so the one holding a profile can
+            // be identified on a real phone instead of being guessed at from here
+            sawSheet(String(key ?? "?"));
+            // anything carrying a user is a candidate — the profile sheet has been
+            // renamed more than once, so the props decide, not the name
+            const userId = props?.userId ?? props?.user?.id ?? props?.user?.userId;
             if (!userId) return;
+            if (String(key ?? "").includes("Message")) return; // not the message sheet
             // don't offer to hide yourself
             if (userId === UserStore?.getCurrentUser?.()?.id) return;
 

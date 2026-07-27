@@ -5,7 +5,7 @@
 
 import { instead } from "@vendetta/patcher";
 import { FluxDispatcher } from "@vendetta/metro/common";
-import { anyHidden, isHiddenIn, mark, shouldHideMessage, store } from "./core";
+import { anyHidden, diag, isHiddenIn, mark, shouldHideMessage, store } from "./core";
 import { filterCallEvent, isHiddenStream, maskVoiceStates } from "./calls";
 import { forgetReactions, learnFromEvent, learnFromReactorList } from "./reactions";
 
@@ -15,7 +15,15 @@ function handle(e: any): boolean {
         case "MESSAGE_CREATE":
         case "MESSAGE_UPDATE": {
             const chId = e.channelId ?? e.channel_id ?? e.message?.channel_id;
-            if (shouldHideMessage(e.message, chId)) return true;
+            const guildId = e.guildId ?? e.guild_id ?? e.message?.guild_id;
+            if (isHiddenIn(e.message?.author?.id, chId, guildId)) {
+                diag.hiddenMsgs++;
+                return true;
+            }
+            if (shouldHideMessage(e.message, chId)) {
+                diag.hiddenMsgs++;
+                return true;
+            }
             // their message quoted under someone else's reply
             const ref = e.message?.referenced_message;
             if (ref && isHiddenIn(ref.author?.id, chId)) e.message.referenced_message = null;
@@ -83,6 +91,7 @@ export function patchDispatcher(patches: (() => void)[]) {
             const e = args[0];
             if (!e?.type || !anyHidden()) return orig.apply(FluxDispatcher, args);
             try {
+                diag.events++;
                 if (handle(e)) return;
             } catch (err) {
                 console.log("[GhostUsers] dispatch", e?.type, err);
