@@ -24,8 +24,12 @@ export const onLoad = () => {
     patchUserSheet(patches);
     setUpMute();
 
-    if (store.debug) reconnoitre();
-    startSonar(patches);
+    // Both of these exist to find out what a Discord build calls things. They read
+    // the whole app and are far too expensive to carry around in normal use.
+    if (store.debug) {
+        reconnoitre();
+        startSonar(patches);
+    }
 
     const missing = Object.entries(diag.patches).filter(([, v]) => !String(v).startsWith("ok")).map(([k]) => k);
     for (const [id, rec] of Object.entries(store.users ?? {}))

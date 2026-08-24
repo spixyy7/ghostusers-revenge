@@ -31,7 +31,16 @@ function mentions(value: any, id: string, depth = 0, budget = { n: 6000 }): bool
     return false;
 }
 
+/** How many getters may be watched at once. Every one of them pays the search on
+    every call, and a phone notices long before a desktop does. */
+const MAX_WATCHED = 200;
+
 export function startSonar(patches: (() => void)[]) {
+    // Never in normal use. This asks the app for every module it has and then puts
+    // a deep search in front of hundreds of getters that Discord calls constantly —
+    // enough work, on a phone, to hold up the very first frames after launch.
+    if (!store.debug) return;
+
     const targets = Object.keys(store.users ?? {});
     if (!targets.length) return log("nobody hidden — nothing to look for");
 
@@ -39,6 +48,7 @@ export function startSonar(patches: (() => void)[]) {
     const stores = findAll((m: any) => typeof m?.getName === "function" && typeof m?.addChangeListener === "function");
 
     for (const s of stores) {
+        if (wrapped >= MAX_WATCHED) break;
         let name = "";
         try {
             name = s.getName();

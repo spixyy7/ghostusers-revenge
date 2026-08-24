@@ -1,11 +1,25 @@
 // What changed, in the plugin's own settings. Written for whoever uses it — what is
 // different for them, not what moved in the code.
 
-export const VERSION = "1.11.0";
+export const VERSION = "1.13.0";
 
 export type Entry = { version: string; summary: string; lines: string[] };
 
 export const CHANGELOG: Entry[] = [
+    {
+        version: "1.13.0",
+        summary: "Opens fast again",
+        lines: [
+            "Discord opens as quickly as it does without the plugin. A search that looked through the whole app at every launch now runs only while the developer switch is on, where it belongs.",
+        ],
+    },
+    {
+        version: "1.12.0",
+        summary: "Quiet in calls",
+        lines: [
+            "Hiding someone silences them for you in a call, and unhiding always gives their sound back. Anyone you had silenced yourself is left exactly as you set them.",
+        ],
+    },
     {
         version: "1.11.0",
         summary: "Pictures, and a tidier settings screen",
